@@ -59,7 +59,7 @@ pipeline {
                     emailext subject: "Build ${env.JOB_NAME} - #${env.BUILD_NUMBER} - SECURITY SCAN: ${currentBuild.currentResult}",
                              body: "Security scan stage completed with status: ${currentBuild.currentResult}\n\nCheck logs at: ${env.BUILD_URL}",
                              attachLog: true,
-                             to: 'YOUR_EMAIL_HERE'
+                             to: 'elanlaw1206@gmail.com'
                 }
             }
         }
@@ -105,12 +105,12 @@ pipeline {
             emailext subject: "BUILD FAILED: ${env.JOB_NAME} - #${env.BUILD_NUMBER}",
                      body: "The build failed. Check details at: ${env.BUILD_URL}",
                      attachLog: true,
-                     to: 'YOUR_EMAIL_HERE'
+                     to: 'elanlaw1206@gmail.com'
         }
         success {
             emailext subject: "BUILD SUCCESS: ${env.JOB_NAME} - #${env.BUILD_NUMBER}",
                      body: "Build completed successfully!\nDetails at: ${env.BUILD_URL}",
-                     to: 'YOUR_EMAIL_HERE'
+                     to: 'elanlaw1206@gmail.com'
         }
     }
 }
