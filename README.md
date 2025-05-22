@@ -215,4 +215,4 @@ When the wizard is done, restart the application and run the exploits again to c
 
 Trigger test: Jenkins auto build.
 
-Test Jenkins auto-trigger 
+Test Jenkins auto-trigger 2
