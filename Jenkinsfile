@@ -13,7 +13,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git 'https://github.com/elanlaw1206/8.1CDevSecOps.git'
+                git url: 'https://github.com/elanlaw1206/8.1CDevSecOps.git', branch: 'main'
             }
         }
 
