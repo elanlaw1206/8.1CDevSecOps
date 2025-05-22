@@ -1,63 +1,74 @@
 pipeline {
-  agent any
+    agent any
 
-  stages {
-    stage('Checkout') {
-      steps {
-        git branch: 'main', url: 'https://github.com/elanlaw1206/8.1CDevSecOps.git'
-      }
+    environment {
+        // SonarCloud Configuration
+        SONARQUBE_ENV = 'SonarCloud'
+        // If you set SONAR_TOKEN as a Jenkins secret credential, expose it here
+        SONAR_AUTH_TOKEN = credentials('sonar-token')
+        // Optional: extend PATH if node/npm installed in a non-default location
+        PATH = "/usr/local/bin:$PATH"
     }
 
-    stage('Install Dependencies') {
-      steps {
-        sh 'npm install'
-      }
-    }
+    stages {
+        stage('Checkout') {
+            steps {
+                git 'https://github.com/elanlaw1206/8.1CDevSecOps.git'
+            }
+        }
 
-    stage('Run Tests') {
-      steps {
-        sh 'npm test || true'
-      }
-    }
+        stage('Install Dependencies') {
+            steps {
+                sh 'npm install'
+            }
+        }
 
-    stage('Generate Coverage Report') {
-      steps {
-        sh 'npm run coverage || true'
-      }
-    }
+        stage('Run Tests') {
+            steps {
+                // Snyk must already be authenticated in the container or globally
+                sh 'snyk test || true'
+            }
+        }
 
-    stage('NPM Audit (Security Scan)') {
-      steps {
-        sh 'npm audit || true'
-      }
-    }
-    
-    stage('SonarCloud Analysis') {
-        steps {
-            withSonarQubeEnv('SonarCloud') {
-                def scannerHome = tool 'SonarScanner' 
-                sh "${scannerHome}/bin/sonar-scanner"
+        stage('NPM Audit (Security Scan)') {
+            steps {
+                sh 'npm audit || true'
+            }
+        }
+
+        stage('SonarCloud Analysis') {
+            steps {
+                withSonarQubeEnv("${SONARQUBE_ENV}") {
+                    sh '''
+                        sonar-scanner \
+                          -Dsonar.projectKey=elanlaw1206_8.1CDevSecOps \
+                          -Dsonar.organization=elanlaw1206 \
+                          -Dsonar.host.url=https://sonarcloud.io \
+                          -Dsonar.login=$SONAR_AUTH_TOKEN
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy to Staging') {
+            when { expression { false } } // Disable for now
+            steps {
+                echo 'Deploying to staging...'
+            }
+        }
+
+        stage('Integration Tests') {
+            when { expression { false } }
+            steps {
+                echo 'Running integration tests...'
+            }
+        }
+
+        stage('Deploy to Production') {
+            when { expression { false } }
+            steps {
+                echo 'Deploying to production...'
             }
         }
     }
-
-
-    stage('Deploy to Staging') {
-      steps {
-        echo 'Simulating deployment to staging environment (e.g., AWS EC2)'
-      }
-    }
-
-    stage('Integration Tests on Staging') {
-      steps {
-        echo 'Running integration tests on staging...'
-      }
-    }
-
-    stage('Deploy to Production') {
-      steps {
-        echo 'Deploying to production server...'
-      }
-    }
-  }
 }
