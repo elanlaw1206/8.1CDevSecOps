@@ -217,4 +217,4 @@ Trigger test: Jenkins auto build.
 
 Test Jenkins auto-trigger 
 
-test sonar-scanner
+test email
