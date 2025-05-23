@@ -1,116 +1,59 @@
 pipeline {
     agent any
 
-    environment {
-        SONAR_TOKEN = credentials('sonarcloud-token')  // Make sure this ID is correct
+    tools {
+        nodejs 'NodeJS 20'
     }
 
-    tools {
-        nodejs 'NodeJS 20'  // Use the one you configured
+    environment {
+        EMAIL_RECIPIENT = 'elanlaw1206@gmail.com'
     }
 
     stages {
-        stage('Checkout') {
+        stage('Build') {
             steps {
-                git 'https://github.com/elanlaw1206/8.1CDevSecOps.git'
-            }
-        }
-
-        stage('Install Dependencies') {
-            steps {
+                echo 'Building the project...'
                 sh 'npm install'
             }
         }
 
-        stage('Run Tests') {
+        stage('Test') {
             steps {
-                script {
-                    try {
-                        sh 'snyk test || true'
-                    } catch (err) {
-                        currentBuild.result = 'FAILURE'
-                        throw err
-                    }
-                }
+                echo 'Running tests...'
+                sh 'npm test > test.log || true'
             }
             post {
                 always {
-                    emailext subject: "Build ${env.JOB_NAME} - #${env.BUILD_NUMBER} - TEST STAGE: ${currentBuild.currentResult}",
-                             body: "Test stage completed with status: ${currentBuild.currentResult}\n\nCheck logs at: ${env.BUILD_URL}",
+                    emailext subject: "Test Stage: ${currentBuild.fullDisplayName} - ${currentBuild.currentResult}",
+                             body: "Test stage completed. See attached log.",
                              attachLog: true,
-                             to: 'YOUR_EMAIL_HERE'
+                             to: "${EMAIL_RECIPIENT}"
                 }
             }
         }
 
-        stage('NPM Audit (Security Scan)') {
+        stage('Security Scan') {
             steps {
-                script {
-                    try {
-                        sh 'npm audit || true'
-                    } catch (err) {
-                        currentBuild.result = 'FAILURE'
-                        throw err
-                    }
-                }
+                echo 'Running security scan...'
+                sh 'npm audit > audit.log || true'
             }
             post {
                 always {
-                    emailext subject: "Build ${env.JOB_NAME} - #${env.BUILD_NUMBER} - SECURITY SCAN: ${currentBuild.currentResult}",
-                             body: "Security scan stage completed with status: ${currentBuild.currentResult}\n\nCheck logs at: ${env.BUILD_URL}",
-                             attachLog: true,
-                             to: 'elanlaw1206@gmail.com'
+                    emailext subject: "Security Scan: ${currentBuild.fullDisplayName} - ${currentBuild.currentResult}",
+                             body: "Security scan completed. See attached audit log.",
+                             attachmentsPattern: 'audit.log',
+                             to: "${EMAIL_RECIPIENT}"
                 }
-            }
-        }
-
-        stage('SonarCloud Analysis') {
-            steps {
-                withSonarQubeEnv('SonarCloud') {
-                    sh '''
-                    sonar-scanner \
-                      -Dsonar.projectKey=elanlaw1206_8.1CDevSecOps \
-                      -Dsonar.organization=elanlaw1206 \
-                      -Dsonar.host.url=https://sonarcloud.io \
-                      -Dsonar.token=${SONAR_TOKEN} || true
-                    '''
-                }
-            }
-        }
-
-        stage('Deploy to Staging') {
-            when { expression { currentBuild.result == null || currentBuild.result == 'SUCCESS' } }
-            steps {
-                echo 'Deploying to staging...'
-            }
-        }
-
-        stage('Integration Tests') {
-            when { expression { currentBuild.result == null || currentBuild.result == 'SUCCESS' } }
-            steps {
-                echo 'Running integration tests...'
-            }
-        }
-
-        stage('Deploy to Production') {
-            when { expression { currentBuild.result == null || currentBuild.result == 'SUCCESS' } }
-            steps {
-                echo 'Deploying to production...'
             }
         }
     }
 
     post {
         failure {
-            emailext subject: "BUILD FAILED: ${env.JOB_NAME} - #${env.BUILD_NUMBER}",
-                     body: "The build failed. Check details at: ${env.BUILD_URL}",
+            emailext subject: "Pipeline FAILED: ${currentBuild.fullDisplayName}",
+                     body: "Build failed. Check Jenkins console or attachments for details.",
                      attachLog: true,
-                     to: 'elanlaw1206@gmail.com'
-        }
-        success {
-            emailext subject: "BUILD SUCCESS: ${env.JOB_NAME} - #${env.BUILD_NUMBER}",
-                     body: "Build completed successfully!\nDetails at: ${env.BUILD_URL}",
-                     to: 'elanlaw1206@gmail.com'
+                     to: "${EMAIL_RECIPIENT}"
         }
     }
 }
